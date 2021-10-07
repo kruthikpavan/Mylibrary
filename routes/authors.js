@@ -8,7 +8,7 @@ router.get("/", async (req, res) => {
     //  await Author.deleteMany({})
     let searchOptions= {}
     if(req.query.name!=null &&req.query.name!=''){
-        searchOptions.name= new RegExp(req.query.name,'i')
+        searchOptions.name= new RegExp(req.query.name.trim(),'i')
         
 
     }

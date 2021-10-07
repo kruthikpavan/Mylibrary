@@ -17,7 +17,33 @@ const upload = multer({
 
 //all books route
 router.get("/", async (req, res) => {
-  res.send("all books");
+  let query= Book.find()
+  if(req.query.title!=null &&req.query.title!=''){
+    query= query.regex('title',new RegExp(req.query.title.trim(),'i'))
+  
+}
+  if(req.query.publishedAfter!=null &&req.query.publishedAfter!=''){
+    query= query.gte('publishDate',req.query.publishedAfter)
+  
+}
+  if(req.query.publishedBefore!=null &&req.query.publishedBefore!=''){
+    query= query.lte('publishDate',req.query.publishedBefore)
+  
+}
+  
+  
+  try{
+    const books= await query.exec()
+    console.log(books);
+    res.render("books/index",{
+      books:books,
+      searchOptions:req.query
+    })
+  }
+  catch(err){
+    console.log(err);
+    res.redirect('/')
+  }
 });
 router.get('/new', async (req, res) => {
     renderNewPage(res, new Book())
@@ -40,7 +66,7 @@ router.get('/new', async (req, res) => {
       // res.redirect(`books/${newBook.id}`)
       res.redirect(`books`)
     } catch(err) {
-      if(book.coverImageName!=null)  removeBookCover(book.coverImageName)
+      book.coverImageName!=null?removeBookCover(book.coverImageName): null
       renderNewPage(res, book, true)
     }
   })
