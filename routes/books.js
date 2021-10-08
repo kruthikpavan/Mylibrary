@@ -1,22 +1,20 @@
 const express = require('express')
 const router = express.Router()
-const multer = require('multer')
-const path = require('path')
-const fs = require('fs')
 const Book = require('../models/book')
 const Author = require('../models/author')
-const uploadPath = path.join('public', Book.coverImageBasePath)
 const imageMimeTypes = ['image/jpeg', 'image/png', 'images/gif']
-const upload = multer({
-  dest: uploadPath,
+// const upload = multer({
+//   dest: uploadPath,
   
-  fileFilter: (req, file, callback) => {
-    callback(null, imageMimeTypes.includes(file.mimetype))
-  }
-})
+//   fileFilter: (req, file, callback) => {
+//     callback(null, imageMimeTypes.includes(file.mimetype))
+//   }
+// })
 
 //all books route
 router.get("/", async (req, res) => {
+  // await Book.deleteMany({})
+
   let query= Book.find()
   if(req.query.title!=null &&req.query.title!=''){
     query= query.regex('title',new RegExp(req.query.title.trim(),'i'))
@@ -34,7 +32,6 @@ router.get("/", async (req, res) => {
   
   try{
     const books= await query.exec()
-    console.log(books);
     res.render("books/index",{
       books:books,
       searchOptions:req.query
@@ -50,23 +47,23 @@ router.get('/new', async (req, res) => {
   })
   
   // Create Book Route
-  router.post('/', upload.single('cover'), async (req, res) => {
-    const fileName = req.file != null ? req.file.filename : null
+  router.post('/', async (req, res) => {
     const book = new Book({
       title: req.body.title,
       author: req.body.author,
       publishDate: new Date(req.body.publishDate),
       pageCount: req.body.pageCount,
-      coverImageName: fileName,
       description: req.body.description
     })
+
+    saveCover(book,req.body.cover)
   
     try {
       const newBook = await book.save()
       // res.redirect(`books/${newBook.id}`)
       res.redirect(`books`)
     } catch(err) {
-      book.coverImageName!=null?removeBookCover(book.coverImageName): null
+      // book.coverImageName!=null?removeBookCover(book.coverImageName): null
       renderNewPage(res, book, true)
     }
   })
@@ -86,13 +83,25 @@ router.get('/new', async (req, res) => {
     }
   }
   
-//remove book cover
-function removeBookCover(fileName){
-  fs.unlink(path.join(uploadPath,fileName),err=>{
-    if(err)console.error(err)
-  })
+
+function saveCover(book,coverEncoded){
+  if(coverEncoded===null) return
+  const cover= JSON.parse(coverEncoded)
+  if(cover!=null && imageMimeTypes.includes(cover.type)){
+    book.coverImage= new Buffer.from(cover.data,'base64')
+    book.coverImageType= cover.type
 
 }
+}
+
+
+//remove book cover
+// function removeBookCover(fileName){
+//   fs.unlink(path.join(uploadPath,fileName),err=>{
+//     if(err)console.error(err)
+//   })
+
+// }
 
 
   module.exports = router
